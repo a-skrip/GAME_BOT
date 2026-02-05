@@ -1,10 +1,12 @@
 package game;
 
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 
 public class GameSession {
-
+    public static final int ANSWER_OPTIONS_AMOUNT = 4;
     private final List<Movie> movies;
     private final String playerId;
 
@@ -24,8 +26,7 @@ public class GameSession {
         }
 
         Movie secretMovie = movies.get(currentMovieIndex);
-        //TODO сгенерировать варианты ответа
-        Question question = new Question(secretMovie, List.of(secretMovie.title()));
+        Question question = new Question(secretMovie, createAnswerOptions(secretMovie));
         currentMovieIndex++;
         lastQuestion = question;
         return Optional.of(question);
@@ -51,4 +52,18 @@ public class GameSession {
         return playerId;
     }
 
+
+    private List<String> createAnswerOptions(Movie secretMovie) {
+        List<Movie> moviesForAnswer = new ArrayList<>(movies);
+        moviesForAnswer.remove(secretMovie);
+        Collections.shuffle(moviesForAnswer);
+
+        List<Movie> subMoviesForAnswer = new ArrayList<>(moviesForAnswer.subList(0,
+                Math.min(ANSWER_OPTIONS_AMOUNT-1, moviesForAnswer.size())));
+        subMoviesForAnswer.add(secretMovie);
+        Collections.shuffle(subMoviesForAnswer);
+        return subMoviesForAnswer.stream()
+                .map(Movie::title)
+                .toList();
+    }
 }

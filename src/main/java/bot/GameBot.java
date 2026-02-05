@@ -10,6 +10,7 @@ import org.telegram.telegrambots.meta.api.methods.send.SendPhoto;
 import org.telegram.telegrambots.meta.api.objects.InputFile;
 import org.telegram.telegrambots.meta.api.objects.Update;
 import org.telegram.telegrambots.meta.api.objects.message.Message;
+import org.telegram.telegrambots.meta.api.objects.replykeyboard.ReplyKeyboard;
 import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
 import org.telegram.telegrambots.meta.generics.TelegramClient;
 
@@ -20,6 +21,7 @@ import java.util.Optional;
 
 public class GameBot implements LongPollingSingleThreadUpdateConsumer {
 
+    public static final int COLUMNS_COUNT = 2;
     private final TelegramClient client;
     private final GameManager gameManager;
     private final List<Movie> movies;
@@ -91,7 +93,11 @@ public class GameBot implements LongPollingSingleThreadUpdateConsumer {
     private void sendNextMovie(String chatId, GameSession gameSession) {
         gameSession.getNextQuestion()
                 .ifPresent(
-                        question -> sendPhoto(chatId, question.secretMovie().pathToImage(), "Угадай фильм"));
+                        question -> sendPhoto(
+                                chatId,
+                                question.secretMovie().pathToImage(),
+                                "Угадай фильм",
+                                new KeyBoardBuilder().build(question.answerOptions(), COLUMNS_COUNT)));
     }
 
     private void sendMessage(String chatId, String text) {
@@ -108,7 +114,7 @@ public class GameBot implements LongPollingSingleThreadUpdateConsumer {
     }
 
 
-    private void sendPhoto(String chatId, String imagePath, String caption) {
+    private void sendPhoto(String chatId, String imagePath, String caption, ReplyKeyboard keyboard) {
         try (InputStream inputStream = getClass().getResourceAsStream(imagePath)) {
             if (inputStream == null) {
                 System.out.println("Изображение %s не найдено".formatted(imagePath));
@@ -116,13 +122,16 @@ public class GameBot implements LongPollingSingleThreadUpdateConsumer {
             }
             InputFile inputFile = new InputFile(inputStream, imagePath);
 
-            SendPhoto photo = SendPhoto.builder()
+            SendPhoto.SendPhotoBuilder photo = SendPhoto.builder()
                     .chatId(chatId)
                     .photo(inputFile)
-                    .caption(caption)
-                    .build();
+                    .caption(caption);
 
-            client.execute(photo);
+            if (keyboard != null) {
+                photo.replyMarkup(keyboard);
+            }
+
+            client.execute(photo.build());
 
         } catch (TelegramApiException | IOException e) {
             e.printStackTrace();
