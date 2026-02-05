@@ -16,6 +16,6 @@ public record Question(
     }
 
     public boolean isRightAnswer(String guess) {
-        return guess.equals(secretMovie.title());
+        return guess.equalsIgnoreCase(secretMovie.title());
     }
 }
