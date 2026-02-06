@@ -11,11 +11,14 @@ import org.telegram.telegrambots.meta.api.objects.InputFile;
 import org.telegram.telegrambots.meta.api.objects.Update;
 import org.telegram.telegrambots.meta.api.objects.message.Message;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.ReplyKeyboard;
+import org.telegram.telegrambots.meta.api.objects.replykeyboard.ReplyKeyboardMarkup;
+import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.KeyboardRow;
 import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
 import org.telegram.telegrambots.meta.generics.TelegramClient;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
@@ -70,15 +73,53 @@ public class GameBot implements LongPollingSingleThreadUpdateConsumer {
         }
         Question lastQuestion = optionalLastQuestion.get();
 
-        if (lastQuestion.isRightAnswer(userMessageText)) {
+        if(lastQuestion.isRightAnswer(userMessageText)) {
             gameSession.incrementScore();
             sendMessage(chatId, "Правильно! Счёт: %d".formatted(gameSession.getScore()));
         } else {
-            sendMessage(chatId, "Ответ не верный! Правильный ответ %s".formatted(lastQuestion.secretMovie().title()));
+            if(gameSession.isGameOver()) {
+                var keyboardRowList = new ArrayList<KeyboardRow>();
+                var row1 = new KeyboardRow();
+                row1.add("/start");
+                keyboardRowList.add(row1);
+                var replyKeyboardMarkup = new ReplyKeyboardMarkup(keyboardRowList);
+                replyKeyboardMarkup.setResizeKeyboard(true);
+                replyKeyboardMarkup.setInputFieldPlaceholder("Выберите команду:");
+
+                SendMessage sendMessage = SendMessage.builder()
+                        .chatId(chatId)
+                        .text("Начать Заново - нажмите Start")
+                        .replyMarkup(replyKeyboardMarkup)
+                        .build();
+                try {
+                    client.execute(sendMessage);
+                } catch (TelegramApiException e) {
+                    e.printStackTrace();
+                }
+            }
+                sendMessage(chatId, "Ответ не верный! Правильный ответ %s".formatted(lastQuestion.secretMovie().title()));
         }
 
         if(gameSession.isGameOver()) {
             sendMessage(chatId, "Игра окончена! Итоговый счёт: %d".formatted(gameSession.getScore()));
+            var keyboardRowList = new ArrayList<KeyboardRow>();
+            var row1 = new KeyboardRow();
+            row1.add("/start");
+            keyboardRowList.add(row1);
+            var replyKeyboardMarkup = new ReplyKeyboardMarkup(keyboardRowList);
+            replyKeyboardMarkup.setResizeKeyboard(true);
+            replyKeyboardMarkup.setInputFieldPlaceholder("Выберите команду:");
+
+            SendMessage sendMessage = SendMessage.builder()
+                    .chatId(chatId)
+                    .text("Начать Заново - нажмите Start")
+                    .replyMarkup(replyKeyboardMarkup)
+                    .build();
+            try {
+                client.execute(sendMessage);
+            } catch (TelegramApiException e) {
+                e.printStackTrace();
+            }
         } else {
             sendNextMovie(chatId, gameSession);
         }
